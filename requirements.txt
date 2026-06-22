@@ -1,7 +1,8 @@
 streamlit
 git+https://github.com/openai/whisper.git
-pydub
 python-docx
 torch
 torchaudio
 ffmpeg-python
+pydub==0.25.1
+pyaudioop>=0.2.1   # ← 新增這一行解決相容性
