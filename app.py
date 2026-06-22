@@ -1,6 +1,5 @@
 import streamlit as st
 import whisper
-from pydub import AudioSegment
 from docx import Document
 from datetime import datetime
 import torch
@@ -16,40 +15,33 @@ with st.sidebar:
     model_name = st.selectbox(
         "選擇 Whisper 模型",
         options=["medium", "large-v3", "small"],
-        index=0, # 0 = medium, 1 = large-v3, 2 = small
-        help="large-v3 最準確，但較慢且耗記憶體"
+        index=0,
+        help="推薦使用 medium"
     )
 
 uploaded_file = st.file_uploader(
     "上傳會議音檔或影片",
     type=["mp3", "wav", "m4a", "mp4", "mov", "avi", "mkv"],
-    help="支援常見格式"
 )
 
 if uploaded_file:
     st.success(f"✅ 已上傳：{uploaded_file.name}")
     
     if st.button("🚀 開始轉錄", type="primary"):
-        with st.spinner("正在轉錄中... 請耐心等待"):
+        with st.spinner("正在轉錄中..."):
             try:
-                # 儲存上傳檔案
                 with tempfile.NamedTemporaryFile(delete=False, suffix=uploaded_file.name) as tmp:
                     tmp.write(uploaded_file.getbuffer())
                     temp_path = tmp.name
 
-                # 轉成 wav
-                audio = AudioSegment.from_file(temp_path)
-                wav_path = temp_path + ".wav"
-                audio.export(wav_path, format="wav")
-
-                # 載入模型（快取加速）
                 @st.cache_resource
                 def load_model(name):
                     return whisper.load_model(name)
                 
                 model = load_model(model_name)
 
-                result = model.transcribe(wav_path, language=None)
+                # 直接轉錄（Whisper 可接受多種格式）
+                result = model.transcribe(temp_path, language=None)
                 transcript = result["text"]
 
                 st.subheader("📝 轉錄結果")
@@ -66,24 +58,23 @@ if uploaded_file:
                 
                 doc.add_page_break()
                 doc.add_heading('✅ 待辦事項', level=1)
-                doc.add_paragraph("請手動整理或使用 LLM 提取")
+                doc.add_paragraph("請手動整理或使用 LLM 進一步提取")
 
                 docx_name = f"會議紀要_{datetime.now().strftime('%Y%m%d_%H%M')}.docx"
                 doc.save(docx_name)
 
-                # 下載按鈕
                 col1, col2 = st.columns(2)
                 with col1:
                     with open(docx_name, "rb") as f:
                         st.download_button("📥 下載 Word 會議紀要", f, file_name=docx_name)
                 with col2:
-                    st.download_button("📥 下載 TXT 逐字稿", transcript, 
+                    st.download_button("📥 下載 TXT", transcript, 
                                      file_name=f"逐字稿_{datetime.now().strftime('%Y%m%d_%H%M')}.txt")
 
             except Exception as e:
                 st.error(f"錯誤：{str(e)}")
             finally:
-                # 清理暫存檔
-                for p in [temp_path, wav_path, docx_name]:
-                    if os.path.exists(p):
-                        os.remove(p)
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                if 'docx_name' in locals() and os.path.exists(docx_name):
+                    os.remove(docx_name)
