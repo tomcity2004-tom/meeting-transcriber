@@ -16,7 +16,7 @@ with st.sidebar:
     model_name = st.selectbox(
         "選擇 Whisper 模型",
         options=["medium", "large-v3", "small"],
-        index=0,
+        index=0, # 0 = medium, 1 = large-v3, 2 = small
         help="large-v3 最準確，但較慢且耗記憶體"
     )
 
