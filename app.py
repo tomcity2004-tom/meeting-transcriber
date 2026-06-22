@@ -5,6 +5,11 @@ from datetime import datetime
 import torch
 import tempfile
 import os
+import subprocess
+
+# 安裝 ffmpeg（Streamlit Cloud 環境）
+if not os.path.exists("/usr/bin/ffmpeg"):
+    subprocess.run("apt-get update && apt-get install -y ffmpeg", shell=True)
 
 st.set_page_config(page_title="會議紀要轉化器", layout="centered")
 st.title("🎙️ 自動會議紀要與待辦轉化器")
